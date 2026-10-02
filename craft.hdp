@@ -1,0 +1,82 @@
+# HDP Craft — a tiny Minecraft, written in HDP.
+# Click the game to play.   W A S D walk · Space jump · mouse to look
+# Left click: mine · Right click: build · 1-9 or mouse wheel: pick a block
+
+window(1280, 720, "HDP Craft")
+background("sky")
+seed(7)
+
+function tree(x, y, z)
+    fill_blocks(x - 2, y + 3, z - 2, x + 2, y + 4, z + 2, "leaves")
+    fill_blocks(x - 1, y + 5, z - 1, x + 1, y + 6, z + 1, "leaves")
+    fill_blocks(x, y, z, x, y + 4, z, "wood")
+end
+
+say "Growing the world..."
+water_level = 8
+for x from -32 to 31
+    for z from -32 to 31
+        h = round(5 + noise(x / 28, z / 28) * 14)
+        place_block(x, 0, z, "bedrock")
+        fill_blocks(x, 1, z, x, h - 3, z, "stone")
+        if h <= water_level
+            fill_blocks(x, h - 2, z, x, h, z, "sand")
+            if h < water_level
+                fill_blocks(x, h + 1, z, x, water_level, z, "water")
+            end
+        else
+            fill_blocks(x, h - 2, z, x, h - 1, z, "dirt")
+            if h >= 16
+                place_block(x, h, z, "snow")
+            else
+                place_block(x, h, z, "grass")
+                near_spawn = abs(x) < 7 and abs(z) < 7
+                if random(1, 70) = 1 and abs(x) < 30 and abs(z) < 30 and not near_spawn
+                    tree(x, h + 1, z)
+                end
+            end
+        end
+        if random(1, 12) = 1
+            place_block(x, random(1, h - 4), z, "coal")
+        end
+        if random(1, 60) = 1
+            place_block(x, random(1, 5), z, "diamond")
+        end
+    end
+end
+say "Done! Click the game to play."
+
+player(0.5, top_block(0, 0) + 1, 0.5)
+
+blocks = ["grass", "dirt", "stone", "cobblestone", "planks", "wood", "glass", "brick", "tnt"]
+chosen = 0
+
+while game_running()
+    for n from 1 to 9
+        if key_pressed(text(n))
+            chosen = n - 1
+        end
+    end
+    chosen = (chosen + mouse_wheel() + 9) mod 9
+
+    if mouse_clicked("left")
+        b = target_block()
+        if b is not nothing and block_at(b[0], b[1], b[2]) is not "bedrock"
+            remove_block(b[0], b[1], b[2])
+            beep(180, 0.05)
+        end
+    end
+    if mouse_clicked("right")
+        spot = target_side()
+        if spot is not nothing
+            place_block(spot[0], spot[1], spot[2], blocks[chosen])
+            beep(520, 0.04)
+        end
+    end
+
+    draw
+        hotbar(blocks, chosen)
+        text("HDP Craft", 20, 18, 26, "gold")
+        text("x " + round(player_x()) + "   y " + round(player_y()) + "   z " + round(player_z()), 20, 52, 16)
+    end
+end
